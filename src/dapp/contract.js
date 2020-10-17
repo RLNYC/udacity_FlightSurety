@@ -1,4 +1,5 @@
 import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
+import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import Config from './config.json';
 import Web3 from 'web3';
 
@@ -8,6 +9,7 @@ export default class Contract {
         let config = Config[network];
         this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
+        this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
         this.initialize(callback);
         this.owner = null;
         this.airlines = [];
@@ -39,6 +41,25 @@ export default class Contract {
             .isOperational()
             .call({ from: self.owner}, callback);
     }
+
+// Ryan added:
+
+    //authorize App contract for acccess to data contract
+    authorizeApp(callback) {
+        let self = this;
+        self.flightSuretyData.methods
+            .authorizeCaller(this.flightSuretyApp.appAddress)
+            .send({ from: self.owner}, (error,result)=>{
+                callback(error,config.appAddress);
+            });
+    }
+
+    listRegistredAirline(callback) {
+        let self = this;
+        self.flightSuretyApp.methods
+             .numberRegisteredAirlines()
+             .call({ from: self.owner}, callback);        
+     }
 
     fetchFlightStatus(flight, callback) {
         let self = this;

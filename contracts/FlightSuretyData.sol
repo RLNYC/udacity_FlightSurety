@@ -12,6 +12,7 @@ contract FlightSuretyData {
     address private contractOwner;                                      // Account used to deploy contract
     bool private operational = true;                                    // Blocks all state changes throughout the contract if false
 
+    
     /************************ Ryan Added:*********************************************************/ 
 
     //data variables for airlines and MultiCalls
@@ -27,15 +28,34 @@ contract FlightSuretyData {
         mapping(address => bool) voteResults;
     }
 
+    // for passenger
+    struct insureeInfo{
+        uint256 insuranceAmount;
+        uint256 payout;
+    }
+
+    // for flight
+    struct flightInfo{
+        bool isRegistered; 
+        uint256 totalPremium;
+    }
+
     mapping(address => Airlines) airlines;
     mapping(address => Voters) voters;
-    mapping(address => uint) private voteCount;
+    mapping(address => uint256) private voteCount;
     mapping(address => uint256) private funding;
 
     // operational control
     mapping(address => uint256) private authorizedCaller;
 
+    // passenger
+    mapping(address => uint256) accountCredit;   //keep track of each passenger's account balance
 
+    // Per flight info
+    mapping(address => string []) flightList; 
+    mapping(address => mapping(string => flightInfo)) flights;     // flight info for each airline
+    mapping(address => mapping(string => address [])) insureeList;   //store the passenger addresses for each flight
+    mapping(address => mapping(string => mapping(address => insureeInfo))) insurees;    //For each flight, it keeps track of premium and payout for each insuree
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -57,6 +77,8 @@ contract FlightSuretyData {
             isRegistered: true,
             isOperational: false
         }); 
+
+        multiCalls.push(msg.sender);
 
 
     }
@@ -152,11 +174,19 @@ contract FlightSuretyData {
         return multiCalls.length;
     }
 
-    function addVoterCounter(address airline, uint count) external
+    function ListRegistredAirline() external 
+        requireIsOperational
+        isCallerAuthorized 
+        returns(address[])
+    {
+        return multiCalls;
+    }
+
+    function addVoterCounter(address newAirline, uint count) external
         requireIsOperational
         isCallerAuthorized
     {
-        voteCount[airline].add(count); 
+        voteCount[newAirline] = voteCount[newAirline].add(count); 
     }
 
     function getVoteCounter(address account) external 
@@ -174,12 +204,12 @@ contract FlightSuretyData {
         delete voteCount[account];
     }
 
-    function addVoters(address account, bool vote) external
+    function addVoters(address newAirline, address account, bool vote) external
         requireIsOperational
         isCallerAuthorized
     {
-        voters[account].airlineVoter.push(msg.sender);
-        voters[account].voteResults[msg.sender] = vote;
+        voters[newAirline].airlineVoter.push(account);
+        voters[newAirline].voteResults[account] = vote;
     }
 
     function getVoter(address account) external 
@@ -242,22 +272,101 @@ contract FlightSuretyData {
 
     }
 
+    function addFlight(address airline,string newFlight) external
+        requireIsOperational
+        isCallerAuthorized
+    {
+        flightList[airline].push(newFlight);
+        flights[airline][newFlight].isRegistered = true;
+
+    }
+
+    function getFlightStatus(address airline, string flightNumber) external
+        requireIsOperational
+        isCallerAuthorized
+        returns(bool)
+    {
+        bool status = flights[airline][flightNumber].isRegistered;
+        return status;
+    }
+
 
    /**
     * @dev Buy insurance for a flight
     *
     */   
-    function buy() external payable
+    function buy(address airline, string flightNumber, address insuree, uint256 amount) external payable
+        requireIsOperational
+        isCallerAuthorized
     {
+        //increment total premiums collected for the flight
+        flights[airline][flightNumber].totalPremium = flights[airline][flightNumber].totalPremium.add(amount);     
+
+        insureeList[airline][flightNumber].push(insuree);             // add insuree to the flight's insuree list
+
+        insurees[airline][flightNumber][insuree]= insureeInfo({
+                                        insuranceAmount: amount,
+                                        payout: 0
+                                        });
 
     }
+
+    function getFlightPremium(address airline, string flightNumber) external
+        requireIsOperational
+        isCallerAuthorized
+        returns(uint256)
+    {
+        return flights[airline][flightNumber].totalPremium;
+    }
+
+    function getInsureeList(address airline, string flightNumber) external
+        requireIsOperational
+        isCallerAuthorized
+        returns(address [])
+    {
+        return insureeList[airline][flightNumber];
+    }
+
+    function getInsureeAmount(address airline, string flightNumber, address insuree) external
+        requireIsOperational
+        isCallerAuthorized
+        returns(uint256)
+    {
+        return insurees[airline][flightNumber][insuree].insuranceAmount;
+    }
+
 
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsurees() external pure
+    function creditInsurees(address airline, string flightNumber) external
+        requireIsOperational
+        isCallerAuthorized 
     {
+        address [] creditAccounts = insureeList[airline][flightNumber];
+        uint256 accountsLength = creditAccounts.length;
 
+        require(accountsLength > 0, "No insurees for the delayed flight");
+
+        for(uint256 i =0; i < accountsLength; i++){
+            uint256 creditAmount = 0;
+            address account = creditAccounts[i];
+            creditAmount = insurees[airline][flightNumber][account].insuranceAmount.mul(3).div(2);
+            
+            // update insureeInfo of flight 
+            insurees[airline][flightNumber][account].payout = creditAmount;
+
+            // update individal passenger account credit
+            accountCredit[account] = accountCredit[account].add(creditAmount);
+        }
+    }
+
+    function getAccountCredit(address account) external
+        requireIsOperational
+        isCallerAuthorized
+        returns(uint256)
+    {
+        return accountCredit[account];
     }
     
 
@@ -265,9 +374,12 @@ contract FlightSuretyData {
      *  @dev Transfers eligible payout funds to insuree
      *
     */
-    function pay() external pure
+    function pay(address account, uint256 amount) external payable  
+        requireIsOperational
+        isCallerAuthorized
     {
-
+        accountCredit[account] = accountCredit[account].sub(amount);
+        account.transfer(amount);
     }
 
    /**
@@ -290,8 +402,6 @@ contract FlightSuretyData {
         uint256 record = funding[account];
         return record;
     }
-
-
 
 
     function getFlightKey(
