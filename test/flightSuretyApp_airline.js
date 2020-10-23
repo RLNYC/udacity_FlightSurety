@@ -113,6 +113,8 @@ contract('Flight Surety Tests - Airline Registration', async (accounts) => {
         // one No vote for 6th airline
         await config.flightSuretyApp.voteAirlineRegistration(newAirline6, false, {from: newAirline3});
 
+        result6 = await config.flightSuretyApp.IsAirlineRegistered.call(newAirline6);
+
         // ASSERT
         assert.equal(result6, false, "The 6th airlines is registered after voting");
     });

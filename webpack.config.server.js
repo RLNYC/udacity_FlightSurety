@@ -6,6 +6,7 @@ const StartServerPlugin = require('start-server-webpack-plugin')
 module.exports = {
     entry: [
         'webpack/hot/poll?1000',
+        'regenerator-runtime/runtime', // Ryan added to address regenerator error
         './src/server/index'
     ],
     watch: true,

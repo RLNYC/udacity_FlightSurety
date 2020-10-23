@@ -8,8 +8,10 @@ export default class Contract {
 
         let config = Config[network];
         this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
         this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
+
         this.initialize(callback);
         this.owner = null;
         this.airlines = [];
@@ -17,22 +19,28 @@ export default class Contract {
     }
 
     initialize(callback) {
+
         this.web3.eth.getAccounts((error, accts) => {
            
             this.owner = accts[0];
+            // Ryan added: 
+            // this.flightSuretyData.methods.authorizeCaller(this.flightSuretyApp._address).send({from: this.owner});
+            //
 
             let counter = 1;
             
-            while(this.airlines.length < 5) {
-                this.airlines.push(accts[counter++]);
-            }
+            // while(this.airlines.length < 5) {
+            //     this.airlines.push(accts[counter++]);
+            // }
 
-            while(this.passengers.length < 5) {
-                this.passengers.push(accts[counter++]);
-            }
+            // while(this.passengers.length < 5) {
+            //     this.passengers.push(accts[counter++]);
+            // }
 
             callback();
         });
+
+
     }
 
     isOperational(callback) {
@@ -42,24 +50,22 @@ export default class Contract {
             .call({ from: self.owner}, callback);
     }
 
-// Ryan added:
-
-    //authorize App contract for acccess to data contract
-    authorizeApp(callback) {
+    isAirlineFunded(callback) {
         let self = this;
-        self.flightSuretyData.methods
-            .authorizeCaller(this.flightSuretyApp.appAddress)
-            .send({ from: self.owner}, (error,result)=>{
-                callback(error,config.appAddress);
-            });
+        // let airlineCheck = self.owner;
+        self.flightSuretyApp.methods
+             .IsAirlineOperational(self.owner)
+             .call({ from: self.owner}, callback);
     }
+
+// Ryan added:
 
     listRegistredAirline(callback) {
         let self = this;
         self.flightSuretyApp.methods
-             .numberRegisteredAirlines()
+             .ListRegistredAirline()
              .call({ from: self.owner}, callback);        
-     }
+    }
 
     fetchFlightStatus(flight, callback) {
         let self = this;

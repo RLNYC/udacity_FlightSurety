@@ -23,11 +23,12 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
-
+    
     address private contractOwner;          // Account used to deploy contract
     uint8 threshold = 4;                    // Ryan added: threshold for MultiCalls 
     FlightSuretyData flightSuretyData;      // Ryan added: Instance of Data Contract
 
+    uint256 public constant AirlineRegistrationFee = 10 ether;
 
     struct Flight {
         bool isRegistered;
@@ -84,6 +85,23 @@ contract FlightSuretyApp {
         _;
     }
 
+        // Define a modifier that checks if the paid amount is sufficient
+      modifier paidEnough(uint _price)
+      {
+        require(msg.value >= _price, "Insufficient payment");
+        _;
+      }
+
+    // Define a modifier that checks the price and refunds the remaining balance
+    modifier checkValue(uint256 _price, address addressToFund)
+    {
+    
+        _;
+        uint256  amountToReturn = msg.value - _price;
+        addressToFund.transfer(amountToReturn);
+    
+    }
+
     modifier maxInsuranceAmount()
     {
         require(msg.value <= 1 ether, "Insurance amount cannot exceed 1ETH");
@@ -103,10 +121,8 @@ contract FlightSuretyApp {
     {
         contractOwner = msg.sender;
         
-        // Ryan added: initialize data contract and first airline
         flightSuretyData = FlightSuretyData(dataContract);
-        // flightSuretyData.registerAirline(contractOwner, false);
-        // emit RegisterAirline(contractOwner);
+
     }
 
     /********************************************************************************************/
@@ -183,7 +199,6 @@ contract FlightSuretyApp {
     */   
     function registerAirline(address airline) external
         requireIsOperational
-        returns(bool success)
     {
         require(airline != address(0), "'account' must be a valid address.");
         require(flightSuretyData.getAirlineOperatingStatus(msg.sender), "Caller airline is not operational - Need to submit 10ETH");
@@ -195,10 +210,8 @@ contract FlightSuretyApp {
             // Register airline directly in this case
             flightSuretyData.registerAirline(airline, false);
             emit RegisterAirline(airline);
-            return true;
         } else {
             emit voteAirlineRegistrationRequest(airline);
-            return false;
         }
     }
 
@@ -270,10 +283,9 @@ contract FlightSuretyApp {
     // Ryan added: Airline submit 10ETH fund
     function submitFunding() payable public
         requireIsOperational
+        paidEnough(AirlineRegistrationFee)
+        checkValue(AirlineRegistrationFee,msg.sender)
     {
-
-        // verify fund is 10 Ether
-        require(msg.value >= 10 ether, "Funding should be 10ETH");
 
         // Make sure airline has not yet been funded
         require(!flightSuretyData.getAirlineOperatingStatus(msg.sender), "Airline is already funded");
@@ -282,9 +294,9 @@ contract FlightSuretyApp {
         require(flightSuretyData.getAirlineRegistrationStatus(msg.sender),"Airline is not yet registered");
 
         // pass ETH to data contract
-        flightSuretyData.fund.value(msg.value)(msg.sender);
+        flightSuretyData.fund.value(AirlineRegistrationFee)(msg.sender);
 
-        emit airlineSubmitFunding(msg.sender, msg.value);
+        emit airlineSubmitFunding(msg.sender, AirlineRegistrationFee);
 
     }
 
