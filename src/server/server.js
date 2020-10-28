@@ -18,7 +18,7 @@ let airlines;
 var orcales = [];
 let allFlight = [];
 const random = new Random();
-let flights = ["AA9200","AA8300","AA7100","UA0900","UA1200","UA2300"];
+let flights = ["NY9200","CA8300","SF7100","BA0900","SA1200","TN2300"];
 
 class flight {
   constructor(flightNumber,airline){
@@ -61,30 +61,24 @@ class flight {
       console.log(e);
     }
   
-  
-  try{
-    await flightSuretyApp.methods.registerAirline(airlines[0]).send({from:firstAirline});
-    let result = await flightSuretyApp.methods.IsAirlineRegistered(airlines[0]).call();
-    console.log(result);
-  }catch(e){
-    console.log("cannot register airline");
-    console.log(e);
+  // without specifying gas and gasPrice, it would show VM revert error
+  for(let a = 0; a < airlines.length; a++){
+    try{
+        await flightSuretyApp.methods.registerAirline(airlines[a]).send(
+          {
+            from:firstAirline,
+            gas: 4712388,
+            gasPrice: 100000000000
+          }
+        );
+        await flightSuretyApp.methods.submitFunding().send({from:airlines[a], value:airlineFee});
+        // let isReg = await flightSuretyApp.methods.IsAirlineRegistered(airlines[a]).call();
+        // console.log(isReg);
+    }catch(error){
+      console.log("Cannot register 3 more airlines");
+      console.log(error);
+    }
   }
-
-  
-  
-  // for(let a = 0; a < airlines.length; a++){
-  //   try{
-  //       const estimateGas = await flightSuretyApp.methods.registerAirline().estimateGas({from: firstAirline});
-  //       await flightSuretyApp.methods.registerAirline(airlines[a]).send({from:firstAirline,gas: estimateGas});
-  //       await flightSuretyApp.methods.submitFunding().send({from:airlines[a], value:airlineFee});
-  //       // let isReg = await flightSuretyApp.methods.IsAirlineRegistered(airlines[a]).call();
-  //       // console.log(isReg);
-  //   }catch(error){
-  //     console.log("Cannot register 3 more airlines");
-  //     console.log(error);
-  //   }
-  // }
 
   // register orcales
 
@@ -182,14 +176,14 @@ app.get('/api/fetchFlights', (req, res) => {
     const random = new Random();
     let newAirline = airlines[random.integer(0, airlines.length -1 )];
     let newFlight = new flight(flights[a],newAirline);
-    let timestamp = Math.floor(newFlight.timestamp / 1000)
+    let timestamp = Math.floor(newFlight.timestamp / 1000);
     allFlight.push(newFlight);
     (async() => {
       try{
-        const estimateGas = await flightSuretyApp.methods.registerFlight(newFlight.flightNumber, timestamp,newFlight.price).estimateGas({from: newFlight.airline});
-        console.log(newFlight.flightNumber,newFlight.timestamp,newFlight.price,newFlight.airline)
-        await flightSuretyApp.methods.registerFlight(newFlight.flightNumber).send({from: newFlight.airline, gas: estimateGas});
-        let result = await flightSuretyApp.methods.getFlightStatus(newFlight.flightNumber,timestamp,newFlight.airline).call();
+        const estimateGas = await flightSuretyApp.methods.registerFlight(newFlight.flightNumber, newFlight.timestamp).estimateGas({from: newFlight.airline});
+        console.log(newFlight.flightNumber,newFlight.timestamp,newFlight.airline)
+        await flightSuretyApp.methods.registerFlight(newFlight.flightNumber, newFlight.timestamp).send({from: newFlight.airline, gas: estimateGas});
+        let result = await flightSuretyApp.methods.getFlightStatus(newFlight.airline,newFlight.flightNumber,newFlight.timestamp).call();
         console.log(result);
       }catch(error){
         console.log(error);

@@ -52,10 +52,10 @@ contract FlightSuretyData {
     mapping(address => uint256) accountCredit;   //keep track of each passenger's account balance
 
     // Per flight info
-    mapping(address => string []) flightList; 
-    mapping(address => mapping(string => flightInfo)) flights;     // flight info for each airline
-    mapping(address => mapping(string => address [])) insureeList;   //store the passenger addresses for each flight
-    mapping(address => mapping(string => mapping(address => insureeInfo))) insurees;    //For each flight, it keeps track of premium and payout for each insuree
+    mapping(address => bytes32 []) flightList; 
+    mapping(address => mapping(bytes32 => flightInfo)) flights;     // flight info for each airline
+    mapping(address => mapping(bytes32 => address [])) insureeList;   //store the passenger addresses for each flight
+    mapping(address => mapping(bytes32 => mapping(address => insureeInfo))) insurees;    //For each flight, it keeps track of premium and payout for each insuree
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -272,21 +272,23 @@ contract FlightSuretyData {
 
     }
 
-    function addFlight(address airline,string newFlight) external
+    function addFlight(address airline,string newFlight, uint256 timestamp) external
         requireIsOperational
         isCallerAuthorized
     {
-        flightList[airline].push(newFlight);
-        flights[airline][newFlight].isRegistered = true;
+        bytes32 key = keccak256(abi.encodePacked(newFlight, timestamp));
+        flightList[airline].push(key);
+        flights[airline][key].isRegistered = true;
 
     }
 
-    function getFlightStatus(address airline, string flightNumber) external
+    function getFlightStatus(address airline, string flightNumber, uint256 timestamp) external
         requireIsOperational
         isCallerAuthorized
         returns(bool)
     {
-        bool status = flights[airline][flightNumber].isRegistered;
+        bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
+        bool status = flights[airline][key].isRegistered;
         return status;
     }
 
@@ -295,55 +297,61 @@ contract FlightSuretyData {
     * @dev Buy insurance for a flight
     *
     */   
-    function buy(address airline, string flightNumber, address insuree, uint256 amount) external payable
+    function buy(address airline, string flightNumber, uint256 timestamp, address insuree, uint256 amount) external payable
         requireIsOperational
         isCallerAuthorized
     {
         //increment total premiums collected for the flight
-        flights[airline][flightNumber].totalPremium = flights[airline][flightNumber].totalPremium.add(amount);     
+        bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
 
-        insureeList[airline][flightNumber].push(insuree);             // add insuree to the flight's insuree list
+        flights[airline][key].totalPremium = flights[airline][key].totalPremium.add(amount);     
 
-        insurees[airline][flightNumber][insuree]= insureeInfo({
+        insureeList[airline][key].push(insuree);             // add insuree to the flight's insuree list
+
+        insurees[airline][key][insuree]= insureeInfo({
                                         insuranceAmount: amount,
                                         payout: 0
                                         });
 
     }
 
-    function getFlightPremium(address airline, string flightNumber) external
+    function getFlightPremium(address airline, string flightNumber, uint256 timestamp) external
         requireIsOperational
         isCallerAuthorized
         returns(uint256)
     {
-        return flights[airline][flightNumber].totalPremium;
+        bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
+        return flights[airline][key].totalPremium;
     }
 
-    function getInsureeList(address airline, string flightNumber) external
+    function getInsureeList(address airline, string flightNumber, uint256 timestamp) external
         requireIsOperational
         isCallerAuthorized
         returns(address [])
     {
-        return insureeList[airline][flightNumber];
+        bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
+        return insureeList[airline][key];
     }
 
-    function getInsureeAmount(address airline, string flightNumber, address insuree) external
+    function getInsureeAmount(address airline, string flightNumber, uint256 timestamp, address insuree) external
         requireIsOperational
         isCallerAuthorized
         returns(uint256)
     {
-        return insurees[airline][flightNumber][insuree].insuranceAmount;
+        bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
+        return insurees[airline][key][insuree].insuranceAmount;
     }
 
 
     /**
      *  @dev Credits payouts to insurees
     */
-    function creditInsurees(address airline, string flightNumber) external
+    function creditInsurees(address airline, string flightNumber, uint256 timestamp) external
         requireIsOperational
         isCallerAuthorized 
     {
-        address [] creditAccounts = insureeList[airline][flightNumber];
+        bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
+        address [] creditAccounts = insureeList[airline][key];
         uint256 accountsLength = creditAccounts.length;
 
         require(accountsLength > 0, "No insurees for the delayed flight");
@@ -351,10 +359,10 @@ contract FlightSuretyData {
         for(uint256 i =0; i < accountsLength; i++){
             uint256 creditAmount = 0;
             address account = creditAccounts[i];
-            creditAmount = insurees[airline][flightNumber][account].insuranceAmount.mul(3).div(2);
+            creditAmount = insurees[airline][key][account].insuranceAmount.mul(3).div(2);
             
             // update insureeInfo of flight 
-            insurees[airline][flightNumber][account].payout = creditAmount;
+            insurees[airline][key][account].payout = creditAmount;
 
             // update individal passenger account credit
             accountCredit[account] = accountCredit[account].add(creditAmount);

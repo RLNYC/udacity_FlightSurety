@@ -7,6 +7,7 @@ contract('Flight Surety Tests - Passengers', async (accounts) => {
     // flights from first airline
     const flightNumber1 = "DL1270";
     const flightNumber2 = "DL1280";
+    const timestamp = Math.floor(Date.now()/ 1000);
 
     // flights from second airline
 
@@ -44,15 +45,15 @@ contract('Flight Surety Tests - Passengers', async (accounts) => {
         let result = true;
 
         try{
-            await config.flightSuretyApp.registerFlight(flightNumber1, {from: config.owner})
+            await config.flightSuretyApp.registerFlight(flightNumber1, timestamp, {from: config.owner})
         }
         catch(e){
             result = false;
         }
 
-        await config.flightSuretyApp.registerFlight(flightNumber2, {from: config.owner})
+        await config.flightSuretyApp.registerFlight(flightNumber2, timestamp, {from: config.owner})
 
-        result2 = await config.flightSuretyApp.getFlightStatus(config.owner, flightNumber2);
+        result2 = await config.flightSuretyApp.getFlightStatus(config.owner, flightNumber2, timestamp);
 
         // ASSERT
         assert.equal(result, true, "Airline is able to register flight");
@@ -65,18 +66,18 @@ contract('Flight Surety Tests - Passengers', async (accounts) => {
         let totalPremium = web3.utils.toWei("1.5","ether");
 
         // ACT
-        await config.flightSuretyApp.submitPurchase(config.owner, flightNumber1, {from: passenger1, value: payment_half});
-        await config.flightSuretyApp.submitPurchase(config.owner, flightNumber1, {from: passenger2, value: payment_1});
+        await config.flightSuretyApp.submitPurchase(config.owner, flightNumber1, timestamp, {from: passenger1, value: payment_half});
+        await config.flightSuretyApp.submitPurchase(config.owner, flightNumber1, timestamp, {from: passenger2, value: payment_1});
 
-        let result = await config.flightSuretyApp.getFlightPremium.call(config.owner, flightNumber1);
+        let result = await config.flightSuretyApp.getFlightPremium.call(config.owner, flightNumber1, timestamp);
 
-        let insureeList = await config.flightSuretyApp.getInsureeList.call(config.owner, flightNumber1);
+        let insureeList = await config.flightSuretyApp.getInsureeList.call(config.owner, flightNumber1, timestamp);
         // console.log(insureeList);
         let insuree1 = insureeList[0];
         let insuree2 = insureeList[1];
 
-        let insureeAmount1 = await config.flightSuretyApp.getInsureeAmount.call(config.owner, flightNumber1, insuree1);
-        let insureeAmount2 = await config.flightSuretyApp.getInsureeAmount.call(config.owner, flightNumber1, insuree2);
+        let insureeAmount1 = await config.flightSuretyApp.getInsureeAmount.call(config.owner, flightNumber1, timestamp, insuree1);
+        let insureeAmount2 = await config.flightSuretyApp.getInsureeAmount.call(config.owner, flightNumber1, timestamp, insuree2);
 
         // ASSERT
         assert.equal(result, totalPremium, "Total Premium record for a flight is correct");  //Check total premium record
@@ -104,7 +105,7 @@ contract('Flight Surety Tests - Passengers', async (accounts) => {
         }
 
         // Generate Oracle response
-        let timestamp = Math.floor(Date.now() / 1000);
+        // let timestamp = Math.floor(Date.now() / 1000);
 
         // Submit a request for oracles to get status information for a flight
         await config.flightSuretyApp.fetchFlightStatus(config.owner, flightNumber1, timestamp);
@@ -128,7 +129,7 @@ contract('Flight Surety Tests - Passengers', async (accounts) => {
             }
         }
 
-        let insureeList = await config.flightSuretyApp.getInsureeList.call(config.owner, flightNumber1);
+        let insureeList = await config.flightSuretyApp.getInsureeList.call(config.owner, flightNumber1, timestamp);
         var insuree1 = insureeList[0];
         var insuree2 = insureeList[1];
 

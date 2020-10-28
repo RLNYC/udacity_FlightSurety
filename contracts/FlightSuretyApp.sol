@@ -50,10 +50,10 @@ contract FlightSuretyApp {
     event voteAirlineRegistrationRequest(address account);
     event airlineVoted(address newAirline, address registered_airline, bool ballot);
 
-    event FlightRegistration(address airline, string flightNumber);
+    event FlightRegistration(address airline, string flightNumber, uint256 timestamp);
     event airlineSubmitFunding(address account, uint amount);
-    event passengerPurchase(address airline, string flightNumber, address passenger, uint256 amount);
-    event insurancePayoutCredit(address airline, string flightNumber);
+    event passengerPurchase(address airline, string flightNumber, uint256 timestamp, address passenger, uint256 amount);
+    event insurancePayoutCredit(address airline, string flightNumber, uint256 timestamp);
     event withdrawalProcessed(address account, uint256 amount);
 
     
@@ -167,21 +167,21 @@ contract FlightSuretyApp {
         return flightSuretyData.getVoterLength(airline);
     }
 
-    function getFlightStatus(address airline, string flightNumber) public view returns(bool){
-        bool status =  flightSuretyData.getFlightStatus(airline, flightNumber);
+    function getFlightStatus(address airline, string flightNumber, uint256 timestamp) public view returns(bool){
+        bool status =  flightSuretyData.getFlightStatus(airline, flightNumber, timestamp);
         return status;
     }
 
-    function getFlightPremium(address airline, string flightNumber) public view returns(uint256){
-        return flightSuretyData.getFlightPremium(airline, flightNumber);
+    function getFlightPremium(address airline, string flightNumber, uint256 timestamp) public view returns(uint256){
+        return flightSuretyData.getFlightPremium(airline, flightNumber, timestamp);
     }
 
-    function getInsureeList(address airline, string flightNumber) public view returns(address []){
-        return flightSuretyData.getInsureeList(airline, flightNumber);
+    function getInsureeList(address airline, string flightNumber, uint256 timestamp) public view returns(address []){
+        return flightSuretyData.getInsureeList(airline, flightNumber, timestamp);
     }
 
-    function getInsureeAmount(address airline, string flightNumber, address insuree) public view returns(uint256){
-        return flightSuretyData.getInsureeAmount(airline, flightNumber, insuree);
+    function getInsureeAmount(address airline, string flightNumber, uint256 timestamp, address insuree) public view returns(uint256){
+        return flightSuretyData.getInsureeAmount(airline, flightNumber, timestamp, insuree);
     }
 
     function getAccountCredit(address account) public view returns(uint256){
@@ -304,31 +304,31 @@ contract FlightSuretyApp {
     * @dev Register a future flight for insuring.
     * only airline can register flights
     */  
-    function registerFlight(string flightNumber) external
+    function registerFlight(string flightNumber, uint256 timestamp) external
         requireIsOperational
     {
         // Make sure airline has is funded
         require(flightSuretyData.getAirlineOperatingStatus(msg.sender), "Airline is yet funded");
 
         // Make sure flight is not registered
-        require(!getFlightStatus(msg.sender, flightNumber),"Flight is already registered");
+        require(!getFlightStatus(msg.sender, flightNumber, timestamp),"Flight is already registered");
 
-        flightSuretyData.addFlight(msg.sender, flightNumber);
-        emit FlightRegistration(msg.sender, flightNumber);
+        flightSuretyData.addFlight(msg.sender, flightNumber, timestamp);
+        emit FlightRegistration(msg.sender, flightNumber, timestamp);
 
     }
 
-    function submitPurchase(address airline, string flightNumber) payable public
+    function submitPurchase(address airline, string flightNumber, uint256 timestamp) payable public
         requireIsOperational
         maxInsuranceAmount
     {
         // Make sure flight is registered
-        require(getFlightStatus(airline, flightNumber), "Flight is not yet registered");
+        require(getFlightStatus(airline, flightNumber, timestamp), "Flight is not yet registered");
 
         // pass ETH to data contract
-        flightSuretyData.buy.value(msg.value)(airline, flightNumber, msg.sender, msg.value);
+        flightSuretyData.buy.value(msg.value)(airline, flightNumber, timestamp, msg.sender, msg.value);
 
-        emit passengerPurchase(airline, flightNumber,msg.sender, msg.value);
+        emit passengerPurchase(airline, flightNumber, timestamp, msg.sender, msg.value);
 
     }
 
@@ -362,8 +362,8 @@ contract FlightSuretyApp {
         oracleResponses[key].isOpen = false;
 
         if(statusCode == 20){
-            flightSuretyData.creditInsurees(airline, flight);
-            emit insurancePayoutCredit(airline, flight);
+            flightSuretyData.creditInsurees(airline, flight, timestamp);
+            emit insurancePayoutCredit(airline, flight, timestamp);
         }
     }
 
@@ -569,17 +569,17 @@ contract FlightSuretyData {
     function getVoterLength(address account) external returns(uint);
 
     // flight info
-    function addFlight(address airline, string newflight) external;
-    function getFlightStatus(address airline, string flightNumber) external returns(bool);
-    function getFlightPremium(address airline, string flightNumber) external returns(uint256);
+    function addFlight(address airline, string newflight, uint256 timestamp) external;
+    function getFlightStatus(address airline, string flightNumber, uint256 timestamp) external returns(bool);
+    function getFlightPremium(address airline, string flightNumber, uint256 timestamp) external returns(uint256);
 
     // Passenger
-    function buy(address airline, string flightNumber, address insuree, uint256 amount) external payable;
-    function getInsureeList(address airline, string flightNumber) external returns(address []);
-    function getInsureeAmount(address airline, string flightNumber, address insuree) external returns(uint256);
+    function buy(address airline, string flightNumber, uint256 timestamp, address insuree, uint256 amount) external payable;
+    function getInsureeList(address airline, string flightNumber, uint256 timestamp) external returns(address []);
+    function getInsureeAmount(address airline, string flightNumber, uint256 timestamp, address insuree) external returns(uint256);
 
     //Payout
-    function creditInsurees(address airline, string flightNumber) external;
+    function creditInsurees(address airline, string flightNumber, uint256 timestamp) external;
     function getAccountCredit(address account) external returns(uint256);
 
     //Withdrwal

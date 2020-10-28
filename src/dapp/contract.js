@@ -27,15 +27,15 @@ export default class Contract {
             // this.flightSuretyData.methods.authorizeCaller(this.flightSuretyApp._address).send({from: this.owner});
             //
 
-            let counter = 1;
+            let counter = 0;
             
-            // while(this.airlines.length < 5) {
-            //     this.airlines.push(accts[counter++]);
-            // }
+            while(this.airlines.length < 4) {
+                this.airlines.push(accts[counter++]);
+            }
 
-            // while(this.passengers.length < 5) {
-            //     this.passengers.push(accts[counter++]);
-            // }
+            while(this.passengers.length < 5) {
+                this.passengers.push(accts[counter++]);
+            }
 
             callback();
         });
@@ -50,13 +50,6 @@ export default class Contract {
             .call({ from: self.owner}, callback);
     }
 
-    isAirlineFunded(callback) {
-        let self = this;
-        // let airlineCheck = self.owner;
-        self.flightSuretyApp.methods
-             .IsAirlineOperational(self.owner)
-             .call({ from: self.owner}, callback);
-    }
 
 // Ryan added:
 
@@ -67,12 +60,40 @@ export default class Contract {
              .call({ from: self.owner}, callback);        
     }
 
+    credit(callback){
+        this.flightSuretyApp.methods.getAccountCredit(this.passengers[0])
+                .call({ from: this.passengers[0]}, (error, result) => {
+                    callback(error,  this.web3.utils.fromWei(result,'ether'));           
+                });
+    }
+
+// Need to modify to listen on insuranceAmount input
+    buyTicket(airline, flightNumber, timestamp, insuranceAmount, passenger, callback) {
+        let self = this;
+        let payload = {
+            airline: airline,
+            flight: flightNumber,
+            timestamp: timestamp,
+            // price: self.web3.utils.toWei((flight.price).toString())
+            //price: self.web3.utils.toWei((Math.floor(Math.random()*10+1)/10).toString(),"ether")
+            price: self.web3.utils.toWei(insuranceAmount.toString(),"ether")
+        } 
+      
+        self.flightSuretyApp.methods
+            .submitPurchase(payload.airline, payload.flight, payload.timestamp)
+            .send({ from: passenger, value:payload.price}, (error, result) => {
+                callback(error, payload);
+                
+            });
+    }
+
+
     fetchFlightStatus(flight, callback) {
         let self = this;
         let payload = {
             airline: self.airlines[0],
             flight: flight,
-            timestamp: Math.floor(Date.now() / 1000)
+            timestamp: Math.floor(flight.timestamp / 1000)
         } 
         self.flightSuretyApp.methods
             .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
@@ -80,4 +101,14 @@ export default class Contract {
                 callback(error, payload);
             });
     }
+
+    redeemCredit(passenger,callback){
+        let self = this;
+        self.flightSuretyApp.methods.submitWithdrawal()
+                .send({ from: passenger}, (error, result) => {
+                    callback(error,result);
+                });
+    }
+
+
 }

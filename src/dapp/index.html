@@ -1,5 +1,24 @@
 <!doctype html>
 <html lang="en">
+<style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+    
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        background-color: rgb(156, 45, 230);
+    }
+    
+    tr:nth-child(even) {
+        background-color: #dddddd;
+        
+    }
+</style>
 
 <head>
     <meta charset="utf-8">
@@ -34,49 +53,56 @@
         </div> -->
     </main>
 
-    <main class="section">
-        <h1>Airline - User Panel</h1>
-        <br>
-
-
-        <div>
-            <span id = "airline-funding-status"></span>
-            <ul id="airlines-funding-status">
-                <!-- Fetch 1 will appear here from app.js -->
-            </ul>
-        </div>
-
-        <!-- <div id="display-wrapper" class="top-20"> -->
-        <!-- <div id="display-wrapper"></div> -->
-        <!-- <div>
-            <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
-        </div> -->
-        <div>
-            <h3>Registered Airlines</h3>
-            <ul id="registered-airlines-list">
-                <!-- Fetch 1 will appear here from app.js -->
-            </ul>
-        </div>
-
-
-
-
-    </main>
-    <br>
-    <br>
 
     <main class="section">
-        <h1>Passenger - User Panel</h1>
+        <h1>Passenger Account</h1>
         <br>
 
-        <!-- <div id="display-wrapper" class="top-20"> -->
-        <!-- <div id="display-wrapper"></div> -->
+        <div id="yourAddress" style="font-size: medium;"> 
+        </div>
+
+        <div id = "creditAmount"  class = "navbar-brand" style="font-size: medium;"> 
+        </div>
+        <br>
+        <br>
+        <table id = "yourFlights">
+            <h3>Insurance Purchased</h3>
+                <tr>
+                  <th>Flight Number</th>
+                  <th>Departure Time</th>
+                  <th>Status</th>
+                </tr>
+        </table>
+
         <div>
             <label class="form">Flight</label> <input type="text" id="flight-number"> <btn class="btn btn-primary" id="submit-oracle">Submit to Oracles</btn>
         </div>
     </main>
     <br>
-    <br>
+
+    <main class="section" id = "flights">
+        <table id = "buyInsurance">
+            <h1>Purchase Insurance</h1>
+            <div class="row top-20">
+                <label class="form">Flight</label> <select id="flight-number-list"> </select>
+                <label class="form">Depature Time </label> <select id='departure-date' type="date"></select> 
+                <label class="form">Insurance Amount(ETH)</label> <input id='insurance-amount' type="number" min="0.01" max="1" step="0.01"/>
+                <btn class="btn btn-primary" id="purchase-insurance">Purchase Insurance</btn>
+            </div>
+        </table>
+
+        <br>
+        <br>
+        <table id = "flightTable">
+            <h3>Available Flights</h3>
+                <tr>
+                  <th>Flight Number</th>
+                  <th>Airline</th>
+                  <th>Departure Time</th>
+                </tr>
+        </table>
+
+    </main>
 
 
 </body>
