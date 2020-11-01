@@ -1,6 +1,6 @@
 # FlightSurety
 
-FlightSurety is a sample application project for Udacity's Blockchain course.
+FlightSurety is an application project for Udacity's Blockchain course.
 
 ## Install
 
@@ -11,28 +11,51 @@ To install, download or clone the repo, then:
 `npm install`
 `truffle compile`
 
+#### Launch Ganache with following settings.
+- Number of accounts: `50`
+- Ether per account: `200`
+
+#### Migrate contract to ganache.
+
+`truffle migrate --reset`
+
 ## Develop Client
 
 To run truffle tests:
 
 `truffle test ./test/flightSurety.js`
+`truffle test ./test/oracles.js`
 `truffle test ./test/flightSuretyApp_airline.js`
 `truffle test ./test/flightSuretyApp_passenger.js`
-`truffle test ./test/oracles.js`
+
+![Passing flightSurety test](./screenshot/pass flightSurety test.png)
+![Passing oracles test](./screenshot/pass oracle test.png)
+![Passing airline test](./screenshot/pass pass airline test.png)
+![Passing passenger test](./screenshot/pass passenger test.png)
 
 To use the dapp:
 
-`truffle migrate`
+## Launching blockchain
+
+- start Ganache 
+- run `truffle migrate --reset`
+
+## Develop Server
+- `npm run server`
+    - Register oracels, airlines, and flight
+    - Listen to fetch flight status request and respond by passing on a randomly generated status code for a flight
+
+## Start dapp server:
+
 `npm run dapp`
 
 To view dapp:
 
 `http://localhost:8000`
 
-## Develop Server
+## Dapp image
 
-`npm run server`
-`truffle test ./test/oracles.js`
+![alt_text](./screenshot/dapp UI.png "UI")
 
 ## Deploy
 

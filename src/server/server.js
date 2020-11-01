@@ -84,8 +84,13 @@ class flight {
 
   for(let c =0; c < OracleAccounts.length; c++){
     try{
-      const estimateGas = await flightSuretyApp.methods.registerOracle().estimateGas({from: OracleAccounts[c], value: fee});
-      await flightSuretyApp.methods.registerOracle().send({from: OracleAccounts[c], value:fee, gas:estimateGas});
+      // const estimateGas = await flightSuretyApp.methods.registerOracle().estimateGas({from: OracleAccounts[c], value: fee});
+      await flightSuretyApp.methods.registerOracle().send({
+          from: OracleAccounts[c], 
+          value:fee,
+          gas: 4712388,
+          gasPrice: 100000000000
+      });
       let index = await flightSuretyApp.methods.getMyIndexes().call({from: OracleAccounts[c]});
       orcales.push({
         address : OracleAccounts[c],
@@ -124,31 +129,39 @@ function randomStatus(){
 
 // watch for OracelRequest event
 // If an request is made, Oracles would report back status codes that are ramdonly generated
+// event OracleRequest(index, airline, flight, timestamp)
+// function submitOracleResponse(uint8 index, address airline, string flight, uint256 timestamp, uint8 statusCode)
+
 flightSuretyApp.events.OracleRequest({
   fromBlock: 0
 }, function (error, event) {
-  if (error) {
-    console.log(error)
-  }else {
-    console.log(event)
-    
-    let randomStatusCode = randomStatus();
-    let eventValue = event.returnValues;
-    console.log(`Catch a new event with randome index: ${eventValue.index} for flight: ${eventValue.flight} and timestamp ${eventValue.timestamp}`);
+    if (error) {
+      console.log(error);
+    }else {
+      console.log(event)
+      
+      let randomStatusCode = randomStatus();
+      console.log(randomStatusCode);
+      let eventValue = event.returnValues;
+      console.log(eventValue);
+      console.log(`Catch a new event with randome index: ${eventValue.index} for flight: ${eventValue.flight} and timestamp ${eventValue.timestamp}`);
 
-    orcales.forEach((oracle) => {
-      oracle.indexes.forEach((index) => {
-        flightSuretyApp.methods.submitOracleResponse(index, eventValue.airline, eventValue.flight, eventValue.timestamp, randomStatusCode)
-          .send({from: oracle.address})
-          .then(res => {
-            console.log(`--> Oracles(${oracle.address}).index(${index}) accepted with status code ${randomStatusCode}`)
-          }).catch(err => {
-            console.log(`--> Oracles(${oracle.address}).index(${index}) rejected with status code ${randomStatusCode}`)
-          });
-        });
-    });
+      orcales.forEach((oracle) => {
+          flightSuretyApp.methods.submitOracleResponse(eventValue.index, eventValue.airline, eventValue.flight, eventValue.timestamp, randomStatusCode)
+            .send(
+              {from: oracle.address,
+               gas: 4712388,
+               gasPrice: 100000000000
+            }).then(res => {
+              console.log(`--> Oracles(${oracle.address}) accepted with status code ${randomStatusCode}`)
+            }).catch(err => {
+              console.log(`--> Oracles(${oracle.address}) rejected with status code ${randomStatusCode}`)
+            }
+          );
+      });
+    }
   }
-});
+);
 
 // Six flights are registered
 // when flight depart time is true, user can look up flight status
@@ -180,9 +193,15 @@ app.get('/api/fetchFlights', (req, res) => {
     allFlight.push(newFlight);
     (async() => {
       try{
-        const estimateGas = await flightSuretyApp.methods.registerFlight(newFlight.flightNumber, newFlight.timestamp).estimateGas({from: newFlight.airline});
+        // const estimateGas = await flightSuretyApp.methods.registerFlight(newFlight.flightNumber, newFlight.timestamp).estimateGas({from: newFlight.airline});
         console.log(newFlight.flightNumber,newFlight.timestamp,newFlight.airline)
-        await flightSuretyApp.methods.registerFlight(newFlight.flightNumber, newFlight.timestamp).send({from: newFlight.airline, gas: estimateGas});
+        await flightSuretyApp.methods.registerFlight(newFlight.flightNumber, newFlight.timestamp).send(
+          {
+            from: newFlight.airline, 
+            gas: 4712388,
+            gasPrice: 100000000000
+          }
+        );
         let result = await flightSuretyApp.methods.getFlightStatus(newFlight.airline,newFlight.flightNumber,newFlight.timestamp).call();
         console.log(result);
       }catch(error){

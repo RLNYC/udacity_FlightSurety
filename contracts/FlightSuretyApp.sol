@@ -172,6 +172,11 @@ contract FlightSuretyApp {
         return status;
     }
 
+    function getFlightStatusCode(address airline, string flightNumber, uint256 timestamp) public view returns(uint256){
+        uint256 status =  flightSuretyData.getFlightStatusCode(airline, flightNumber, timestamp);
+        return status;
+    }
+
     function getFlightPremium(address airline, string flightNumber, uint256 timestamp) public view returns(uint256){
         return flightSuretyData.getFlightPremium(airline, flightNumber, timestamp);
     }
@@ -360,6 +365,7 @@ contract FlightSuretyApp {
         //Ryan added: if the flight is delayed due to airline, automatically process credit to insuree
         bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp)); 
         oracleResponses[key].isOpen = false;
+        flightSuretyData.addFlightStatusCode(airline, flight, timestamp, statusCode);
 
         if(statusCode == 20){
             flightSuretyData.creditInsurees(airline, flight, timestamp);
@@ -374,7 +380,7 @@ contract FlightSuretyApp {
         string flight,
         uint256 timestamp                            
     )
-        external
+        public
     {
         uint8 index = getRandomIndex(msg.sender);
 
@@ -398,7 +404,7 @@ contract FlightSuretyApp {
     uint256 public constant REGISTRATION_FEE = 1 ether;
 
     // Number of oracles that must respond for valid status
-    uint256 private constant MIN_RESPONSES = 3;
+    uint256 private constant MIN_RESPONSES = 5;
 
 
     struct Oracle {
@@ -473,7 +479,7 @@ contract FlightSuretyApp {
         uint256 timestamp,
         uint8 statusCode
     )
-        external
+        public
     {
         require((oracles[msg.sender].indexes[0] == index) || (oracles[msg.sender].indexes[1] == index) || (oracles[msg.sender].indexes[2] == index), 
                 "Index does not match oracle request");
@@ -572,6 +578,8 @@ contract FlightSuretyData {
     function addFlight(address airline, string newflight, uint256 timestamp) external;
     function getFlightStatus(address airline, string flightNumber, uint256 timestamp) external returns(bool);
     function getFlightPremium(address airline, string flightNumber, uint256 timestamp) external returns(uint256);
+    function addFlightStatusCode(address airline,string newFlight, uint256 timestamp, uint256 statusCode) external;
+    function getFlightStatusCode(address airline, string flightNumber, uint256 timestamp) external returns (uint256);
 
     // Passenger
     function buy(address airline, string flightNumber, uint256 timestamp, address insuree, uint256 amount) external payable;

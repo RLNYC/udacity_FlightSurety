@@ -21,8 +21,6 @@ let contract;
         // Read user info
 
         let address = DOM.elid("yourAddress");
-        // address.appendChild(document.createTextNode("Your address :  "+contract.passengers[0]));
-        // address.innerHTML = "";
         address.innerHTML = "Your address :  "+contract.passengers[0]
 
         contract.credit((error, result) => {
@@ -45,11 +43,9 @@ let contract;
 
         //create available flight table
         for(let a = 0; a < jsonResponse.length;a++){
-            // jsonResponse[a].price = 0.5;
             let newRow = document.createElement("tr");
             let flightnumber = document.createElement("td");
             let airline = document.createElement("td");
-            // let price = document.createElement("td");
             let depart = document.createElement("td");
             // let status = document.createElement("td");
             let select = document.createElement("td");
@@ -59,7 +55,7 @@ let contract;
             let airlines;
 
             contract.listRegistredAirline((error, result) => {
-                console.log(error, result);
+                // console.log(error, result);
                 // console.log(jsonResponse[a].airline, result[1]);
 
                 if(jsonResponse[a].airline == result[1]){
@@ -75,11 +71,9 @@ let contract;
             
             flightnumber.appendChild(document.createTextNode(jsonResponse[a].flightNumber));
 
-            // price.appendChild(document.createTextNode(jsonResponse[a].price.toString()));
-
             depart.appendChild(document.createTextNode( new Date(jsonResponse[a].timestamp).toString().substring(0,28)));
             depart.classList.add("departures");
-            // status.classList.add("intheGreen");
+            // status.classList.add("showStatus");
             timer.classList.add("timeleft");
             depart.appendChild(timer);
 
@@ -92,16 +86,6 @@ let contract;
             // button.appendChild(document.createTextNode("Purchase"));
             // button.classList.add("newButton");
             // button.setAttribute("id", a);
-
-            // button.onclick = function() {
-            //     let div = document.createElement("div");
-            //     div.classList.add("loader");
-            //     this.appendChild(div);
-            //     contract.buyTicket(jsonResponse[a],contract.passengers[0],jsonResponse[a].price,(error, result) => {
-            //         purchaseFlight(error,result);
-            //         this.removeChild(div)
-            //     });
-            // }
 
             // select.appendChild(button)
             // newRow.append(select);
@@ -152,26 +136,38 @@ let contract;
             
             let flightNumber = DOM.elid('flight-number-list').value;
             let airline = airlineList[flightList.indexOf(flightNumber)];
-            let timestamp = DOM.elid('departure-date').value;
+            let timestamp = parseInt(DOM.elid('departure-date').value);
             let insuranceAmount = DOM.elid('insurance-amount').value;
 
             // console.log(flightNumber, airline, timestamp, insuranceAmount);
             
             // Write transaction 
             contract.buyTicket(airline, flightNumber, timestamp, insuranceAmount, contract.passengers[0],(error, result) => {
-                console.log(error);
-                // purchaseFlight(error,result);
+                // console.log(error);
+                console.log(result);
+                purchaseFlight(error,result);
             });
         });
 
 
-        // User-submitted transaction
-        DOM.elid('submit-oracle').addEventListener('click', () => {
-            let flight = DOM.elid('flight-number').value;
+        // Withdrawal
+        DOM.elid('withdraw-credit').addEventListener('click', () => {
+            let withdrawalAmount = DOM.elid('withdraw-amount').value;
             // Write transaction
-            contract.fetchFlightStatus(flight, (error, result) => {
-                display('Oracles', 'Trigger oracles', [ { label: 'Fetch Flight Status', error: error, value: result.flight + ' ' + result.timestamp} ]);
+            contract.redeemCredit(withdrawalAmount, contract.passengers[0], (error, result) => {
+                console.log(result);
             });
+
+            let address = DOM.elid("yourAddress");
+            address.innerHTML = "Your address :  "+contract.passengers[0]
+
+            setTimeout(() =>{
+                contract.credit((error, result) => {
+                    document.getElementById("creditAmount").innerText = "Available Credit For Withdrawal : "+result;
+                });
+            },1000);
+
+
         })
     
     });
@@ -199,17 +195,20 @@ function purchaseFlight(error,flight) {
         let newRow = document.createElement("tr");
         let flightnumber = document.createElement("td");
         let airline = document.createElement("td");
+        let insureAmount = document.createElement("td");
         let insure = document.createElement("button");
         let buttonT = document.createElement("td");
         let depart = document.createElement("td");
+        let status = document.createElement("td");
         let td = document.createElement("td");
+
+
+        // pass in flight number
         flightnumber.appendChild(document.createTextNode(flight.flight));
-        
-        depart.appendChild(document.createTextNode( new Date(flight.timestamp * 1000) .toString().substring(0,28)));
         newRow.appendChild(flightnumber);
 
+        // pass in airline
         let airlines;
-
         (async()=>{
             contract.listRegistredAirline((error, result) => {
                 // console.log(error, result);
@@ -228,25 +227,90 @@ function purchaseFlight(error,flight) {
             })
         })()
 
+        // pass in departure time
+        var departureTimeFormatted = new Date(parseInt(flight.timestamp)).toString().substring(0,28)
+        depart.appendChild(document.createTextNode(departureTimeFormatted));
 
-        insure.appendChild(document.createTextNode("Redeem Insurance"));
+        // pass in insurance amount
+        insureAmount.appendChild(document.createTextNode(flight.price/1000000000000000000));
+        newRow.appendChild(insureAmount);
+
+        // create "Fetch Flight button"
+        insure.appendChild(document.createTextNode("Fetch Flight Status"));
         insure.classList.add("newInsure");
         insure.onclick = function() {
             let div = document.createElement("div");
             div.classList.add("loader");
             insure.appendChild(div);
-            contract.fetchFlightStatus(flight,contract.passengers[0],(error, result) => {
+            contract.fetchFlightStatus(flight,(error, result) => {
                 if (error == null){
+                    // console.log(result);
                     insure.disabled = true;
                 }else{
                     alert(error);
                 }
             });
-            this.removeChild(div)
+
+            this.removeChild(div);
+
+            // pass in status
+            // status.classList.add("showStatus");
+            let statusNow = "Loading...";
+            status.appendChild(document.createTextNode(statusNow));
+
+
+            setTimeout(() => {    
+                contract.getFlightStatusCode(flight, (error, result) => {
+                    console.log(result);
+                    if (error == null){
+                        if(result == 0){
+                            statusNow = "Need to fetch flight status";
+                            // statusNow.style.color = "yellow";
+                        }else if(result == 50){
+                            statusNow = "Late Other";
+                            // statusNow.style.color = "red";
+                        }else if (result == 40) {
+                            statusNow = "Late Technical"
+                            // statusNow.style.color = "red";
+                        }else if (result == 30) {
+                            statusNow = "Late Weather"
+                            // statusNow.style.color = "red";
+                        }else if (result == 20) {
+                            statusNow= "Late Airline -- Payout 1.5x "
+                            // statusNow.style.color = "red";
+                        }else if (result == 10) {
+                            statusNow = "On Time"
+                            // statusNow.style.color = "#00ff00";
+                        }else{
+                            statusNow = "Unknown"
+                            // statusNow.style.color = "yellow";
+                        }
+                    }else{
+                        alert(error);
+                    }
+                    status.removeChild(status.lastChild);
+                    status.appendChild(document.createTextNode(statusNow));
+                });
+                
+
+                let address = DOM.elid("yourAddress");
+                address.innerHTML = "Your address :  "+contract.passengers[0]
+
+                contract.credit((error, result) => {
+                    document.getElementById("creditAmount").innerText = "Available Credit For Withdrawal : "+result;
+                });
+
+                
+            }, 5000);
+
+            
+
         }
-        
+
         newRow.appendChild(airline);
         newRow.append(depart);
+        newRow.append(insureAmount);
+        newRow.append(status);
         buttonT.append(insure);
         newRow.append(buttonT);
         main.appendChild(newRow);

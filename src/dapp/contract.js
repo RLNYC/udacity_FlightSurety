@@ -7,7 +7,9 @@ export default class Contract {
     constructor(network, callback) {
 
         let config = Config[network];
-        this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+        // this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
+        // use the following, otherwise event listener are not responding
+        this.web3 = new Web3(new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws')));
 
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
         this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
@@ -81,9 +83,14 @@ export default class Contract {
       
         self.flightSuretyApp.methods
             .submitPurchase(payload.airline, payload.flight, payload.timestamp)
-            .send({ from: passenger, value:payload.price}, (error, result) => {
+            .send({ from: passenger, 
+                    value:payload.price,
+                    "gas": 4712388,
+                    "gasPrice": 100000000000
+            }, (error, result) => {
+                // console.log(error);
+                // console.log(result);
                 callback(error, payload);
-                
             });
     }
 
@@ -91,24 +98,61 @@ export default class Contract {
     fetchFlightStatus(flight, callback) {
         let self = this;
         let payload = {
-            airline: self.airlines[0],
-            flight: flight,
-            timestamp: Math.floor(flight.timestamp / 1000)
+            airline: flight.airline,
+            flight: flight.flight,
+            timestamp: parseInt(flight.timestamp)
         } 
         self.flightSuretyApp.methods
             .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
-            .send({ from: self.owner}, (error, result) => {
+            .send({ from: self.owner
+            }, (error, result) => {
+                // console.log(error);
+                // console.log(result);
                 callback(error, payload);
             });
     }
 
-    redeemCredit(passenger,callback){
+    getFlightStatusCode(flight, callback) {
         let self = this;
-        self.flightSuretyApp.methods.submitWithdrawal()
+        let payload = {
+            airline: flight.airline,
+            flight: flight.flight,
+            timestamp: flight.timestamp
+        }
+
+        self.flightSuretyApp.methods
+        .getFlightStatusCode(payload.airline, payload.flight, payload.timestamp)
+        .call({ from: self.owner}, callback);
+   
+    }
+
+
+    // listen to event: flightStatusInfo
+    // FlightStatusEvent(callback) {
+    //     let self = this;
+        
+    //     self.flightSuretyApp.events.FlightStatusInfo({
+    //             fromBlock: "latest"
+    //         }, function (error, event) {
+    //             if (error) {
+    //                 console.log(error);
+    //                 callback(error);
+    //             } else {
+    //                 // console.log(event);
+    //             }
+    //         })
+    //         .on('data', function(event){
+    //             return event;
+    //         });
+    // }
+
+    redeemCredit(amount, passenger,callback){
+        let self = this;
+        let withdrawlAmount = this.web3.utils.toWei(amount,"ether");
+        self.flightSuretyApp.methods.submitWithdrawal(withdrawlAmount)
                 .send({ from: passenger}, (error, result) => {
                     callback(error,result);
                 });
     }
-
 
 }

@@ -38,6 +38,7 @@ contract FlightSuretyData {
     struct flightInfo{
         bool isRegistered; 
         uint256 totalPremium;
+        uint256 statusCode;
     }
 
     mapping(address => Airlines) airlines;
@@ -279,6 +280,8 @@ contract FlightSuretyData {
         bytes32 key = keccak256(abi.encodePacked(newFlight, timestamp));
         flightList[airline].push(key);
         flights[airline][key].isRegistered = true;
+        flights[airline][key].totalPremium = 0;
+        flights[airline][key].statusCode = 0;
 
     }
 
@@ -289,6 +292,25 @@ contract FlightSuretyData {
     {
         bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
         bool status = flights[airline][key].isRegistered;
+        return status;
+    }
+
+    function addFlightStatusCode(address airline,string newFlight, uint256 timestamp, uint256 statusCode) external
+        requireIsOperational
+        isCallerAuthorized
+    {
+        bytes32 key = keccak256(abi.encodePacked(newFlight, timestamp));
+        flights[airline][key].statusCode = statusCode;
+
+    }
+
+    function getFlightStatusCode(address airline, string flightNumber, uint256 timestamp) external
+        requireIsOperational
+        isCallerAuthorized
+        returns(uint256)
+    {
+        bytes32 key = keccak256(abi.encodePacked(flightNumber, timestamp));
+        uint256 status = flights[airline][key].statusCode;
         return status;
     }
 

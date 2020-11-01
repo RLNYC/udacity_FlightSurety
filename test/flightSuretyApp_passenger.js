@@ -94,23 +94,29 @@ contract('Flight Surety Tests - Passengers', async (accounts) => {
         /* simulate Oracles runtime*/
 
         // Register Oracles
-        const TEST_ORACLES_COUNT = 50;
+        const TEST_ORACLES_COUNT = 40;
         const STATUS_CODE_LATE_AIRLINE = 20;
         let fee = await config.flightSuretyApp.REGISTRATION_FEE.call();
 
-        for(let a=19; a<TEST_ORACLES_COUNT; a++) {      
+        for(let a=10; a<TEST_ORACLES_COUNT; a++) {      
           await config.flightSuretyApp.registerOracle({ from: accounts[a], value: fee });
-        //   let result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
-        //   console.log(`Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`);
+          let result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
+          console.log(`Oracle ${accounts[a]} Registered: ${result[0]}, ${result[1]}, ${result[2]}`);
         }
 
         // Generate Oracle response
         // let timestamp = Math.floor(Date.now() / 1000);
 
         // Submit a request for oracles to get status information for a flight
-        await config.flightSuretyApp.fetchFlightStatus(config.owner, flightNumber1, timestamp);
+        try{
+          let result = await config.flightSuretyApp.fetchFlightStatus(config.owner, flightNumber1, timestamp);
+          // console.log(result);
+        }catch(e){
+          console.log(e);
+        }
+        
 
-        for(let a=19; a<TEST_ORACLES_COUNT; a++) {
+        for(let a=10; a<TEST_ORACLES_COUNT; a++) {
 
             // Get oracle information
             let oracleIndexes = await config.flightSuretyApp.getMyIndexes.call({ from: accounts[a]});
@@ -123,7 +129,8 @@ contract('Flight Surety Tests - Passengers', async (accounts) => {
               }
               catch(e) {
                 // Enable this when debugging
-                //  console.log('\nError', idx, oracleIndexes[idx].toNumber(), flight, timestamp);
+                // console.log(e);
+                //  console.log('\nError', idx, oracleIndexes[idx].toNumber(), flightNumber1, timestamp);
               }
     
             }

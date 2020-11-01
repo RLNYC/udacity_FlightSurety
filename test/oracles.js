@@ -4,7 +4,7 @@ var Test = require('../config/testConfig.js');
 
 contract('Oracles', async (accounts) => {
 
-  const TEST_ORACLES_COUNT = 50;
+  const TEST_ORACLES_COUNT = 30;
   var config;
   before('setup contract', async () => {
     config = await Test.Config(accounts);
@@ -28,8 +28,8 @@ contract('Oracles', async (accounts) => {
     // ACT
     for(let a=1; a<TEST_ORACLES_COUNT; a++) {      
       await config.flightSuretyApp.registerOracle({ from: accounts[a], value: fee });
-      let result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
-      console.log(`Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`);
+      // let result = await config.flightSuretyApp.getMyIndexes.call({from: accounts[a]});
+      // console.log(`Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`);
     }
   });
 
@@ -63,7 +63,7 @@ contract('Oracles', async (accounts) => {
         }
         catch(e) {
           // Enable this when debugging
-           console.log('\nError', idx, oracleIndexes[idx].toNumber(), flight, timestamp);
+          //  console.log('\nError', idx, oracleIndexes[idx].toNumber(), flight, timestamp);
         }
 
       }
