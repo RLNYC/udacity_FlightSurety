@@ -23,15 +23,15 @@ To install, download or clone the repo, then:
 
 To run truffle tests:
 
-`truffle test ./test/flightSurety.js`
-`truffle test ./test/oracles.js`
-`truffle test ./test/flightSuretyApp_airline.js`
-`truffle test ./test/flightSuretyApp_passenger.js`
+- `truffle test ./test/flightSurety.js`
+- `truffle test ./test/oracles.js`
+- `truffle test ./test/flightSuretyApp_airline.js`
+- `truffle test ./test/flightSuretyApp_passenger.js`
 
-![Passing flightSurety test](./screenshot/pass flightSurety test.png)
-![Passing oracles test](./screenshot/pass oracle test.png)
-![Passing airline test](./screenshot/pass pass airline test.png)
-![Passing passenger test](./screenshot/pass passenger test.png)
+![Passing flightSurety test](./screenshots/pass flightSurety test.png)
+![Passing oracles test](./screenshots/pass oracle test.png)
+![Passing airline test](./screenshots/pass pass airline test.png)
+![Passing passenger test](./screenshots/pass passenger test.png)
 
 To use the dapp:
 
@@ -55,7 +55,7 @@ To view dapp:
 
 ## Dapp image
 
-![alt_text](./screenshot/dapp UI.png "UI")
+![alt_text](./screenshots/dapp UI.png "UI")
 
 ## Deploy
 
