@@ -28,10 +28,10 @@ To run truffle tests:
 - `truffle test ./test/flightSuretyApp_airline.js`
 - `truffle test ./test/flightSuretyApp_passenger.js`
 
-![Passing flightSurety test](./screenshots/pass_flightSurety_test.png)
-![Passing oracles test](./screenshots/pass_oracle_test.png)
-![Passing airline test](./screenshots/pass_airline_test.png)
-![Passing passenger test](./screenshots/pass_passenger_test.png)
+![Passing flightSurety test](./screenshots/pass_flightSurety_test.jpg)
+![Passing oracles test](./screenshots/pass_oracle_test.jpg)
+![Passing airline test](./screenshots/pass_airline_test.jpg)
+![Passing passenger test](./screenshots/pass_passenger_test.jpg)
 
 To use the dapp:
 
@@ -55,7 +55,7 @@ To view dapp:
 
 ## Dapp image
 
-![alt_text](./screenshots/dappUI.png "UI")
+![alt_text](./screenshots/dappUI.jpg "UI")
 
 ## Deploy
 
